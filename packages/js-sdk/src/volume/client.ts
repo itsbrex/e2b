@@ -2,6 +2,7 @@ import createClient from 'openapi-fetch'
 
 import type { components, paths } from './schema.gen'
 import { defaultHeaders, getEnvVar } from '../api/metadata'
+import { buildRequestSignal } from '../connectionConfig'
 import { createApiLogger, Logger } from '../logs'
 import type { Volume } from './index'
 
@@ -47,6 +48,13 @@ export interface VolumeApiOpts {
    * Additional headers to send with the request.
    */
   headers?: Record<string, string>
+
+  /**
+   * An optional `AbortSignal` that can be used to cancel the in-flight request.
+   * When the signal is aborted, the underlying `fetch` is aborted and the
+   * returned promise rejects with an `AbortError`.
+   */
+  signal?: AbortSignal
 }
 
 export class VolumeConnectionConfig {
@@ -83,10 +91,8 @@ export class VolumeConnectionConfig {
     return getEnvVar('E2B_VOLUME_API_URL')
   }
 
-  getSignal(requestTimeoutMs?: number) {
-    const timeout = requestTimeoutMs ?? this.requestTimeoutMs
-
-    return timeout ? AbortSignal.timeout(timeout) : undefined
+  getSignal(requestTimeoutMs?: number, signal?: AbortSignal) {
+    return buildRequestSignal(requestTimeoutMs ?? this.requestTimeoutMs, signal)
   }
 }
 
